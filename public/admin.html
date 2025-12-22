@@ -2,65 +2,65 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablette Admin</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tablette Maître du Jeu</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
-    <div class="control-grid">
-        <div style="grid-column: span 2; text-align: center; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 15px;">
-            
-            <h3 id="compteur-q" style="color: #f1c40f; margin-bottom: 15px;">
-                Questions restantes : -- / --
-            </h3>
 
-            <label style="font-size: 1.2rem; cursor: pointer; display: block; margin-bottom: 20px;">
-                <input type="checkbox" id="mode-aleatoire" checked> 
-                🎲 Mode Aléatoire (Mélanger)
-            </label>
-
-            <button id="btn-next-question" class="dash-btn btn-vert" style="width: 100%; font-size: 1.5rem; padding: 20px;">
-                🚀 LANCER LA PROCHAINE QUESTION
-            </button>
-
-            <p id="preview-q" style="margin-top: 15px; color: #bdc3c7; font-style: italic;">
-                Prêt à lancer...
-            </p>
+    <div id="main-dashboard" class="dashboard-container">
+        <div class="header-info">
+            <h2 id="compteur-q">Questions : -- / --</h2>
+            <div id="preview-q">En attente...</div>
         </div>
 
-        <button id="btn-reset" class="dash-btn btn-gris">🔄 Reset Jeu</button>
-        <button id="btn-kick-all" class="dash-btn btn-rouge">💀 Virer Joueurs</button>
+        <div class="control-panel">
+            <div class="switch-container">
+                <label class="switch-label"><input type="checkbox" id="mode-aleatoire" checked> 🎲 Aléatoire</label>
+                <label class="switch-label"><input type="checkbox" id="mode-auto"> 🔄 Auto</label>
+            </div>
+
+            <button id="btn-next-question" class="big-btn start-btn">🚀 LANCER LA PARTIE</button>
+        </div>
+
+        <div class="footer-controls">
+            <button id="btn-stop-game" class="mini-btn rouge">🛑 PODIUM</button>
+            <button id="btn-reset" class="mini-btn gris">🔄 Reset Rapide</button>
+            <button id="btn-kick-all" class="mini-btn gris">💀 Kick All</button>
+        </div>
     </div>
 
     <div id="zone-validation" class="overlay-juge">
         <div class="juge-content">
-            <h2 class="titre-validation">VALIDATION RÉPONSE</h2>
-            <div id="juge-joueur" class="nom-joueur-buzz">...</div>
+            <h3 class="titre-validation">QUI A BUZZÉ ?</h3>
+            <div id="juge-joueur" class="nom-joueur-buzz">JOUEUR</div>
             
             <div class="actions-juge">
                 <button id="btn-vrai" class="gros-bouton btn-vert">
-                    <span class="emoji">✅</span><br>CORRECT<br><small>(+1 Pt)</small>
+                    <span class="emoji">✅</span>
+                    <small>VRAI</small>
                 </button>
+                
+                <button id="btn-reveal" class="petit-bouton-gris">
+                    <span class="emoji">👀</span><br>RÉPONSE
+                </button>
+
                 <button id="btn-faux" class="gros-bouton btn-rouge">
-                    <span class="emoji">❌</span><br>FAUX<br><small>(Continuer)</small>
+                    <span class="emoji">❌</span>
+                    <small>FAUX</small>
                 </button>
             </div>
         </div>
     </div>
 
-    <div class="dashboard-container">
-        <h1>COMMANDES DU JEU</h1>
+    <div id="restart-screen">
+        <h1 style="color:#f1c40f; font-size: 3rem; margin-bottom: 20px;">PARTIE TERMINÉE</h1>
+        <p class="restart-text">Le podium est affiché sur la TV.<br>Prêt pour une nouvelle partie ?</p>
         
-        <div class="control-grid">
-            <button id="btn-reset" class="dash-btn btn-bleu">
-                🔄<br>QUESTION SUIVANTE / RESET
-            </button>
-
-            <button id="btn-kick-all" class="dash-btn btn-gris">
-                🗑️<br>VIRER LES JOUEURS
-            </button>
-        </div>
+        <button id="btn-hard-reset">
+            🔄 TOUT EFFACER <br> & RECOMMENCER
+        </button>
     </div>
 
     <script type="module" src="js/admin.js"></script>
