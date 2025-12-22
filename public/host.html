@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Écran TV</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/host.css">
+</head>
+<body>
+    <button id="btn-unlock-audio">🔇 CLIQUER ICI POUR ACTIVER LE SON</button>
+
+    <div class="main-container">
+        
+        <div id="central-display">
+            <h1 id="status-text">SCANNEZ POUR REJOINDRE</h1>
+            
+            <h1 id="question-text" style="display:none;"></h1> 
+
+            <div id="progress-bar-container" style="display:none;">
+                <div id="progress-bar"></div>
+            </div>
+
+            <div id="qr-container">
+                <img src="assets/qr-code.png" alt="QR Code" id="qr-image">
+                <p class="qr-label">quizzroomhome.web.app</p>
+            </div>
+        </div>
+
+        <div id="players-grid"></div>
+        
+    </div>
+    <audio id="audio-player-principal" preload="auto" style="display:none;"></audio>    
+    <script type="module" src="js/host.js"></script>
+</body>
+</html>

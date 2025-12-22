@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Buzzer</title>
+    <link rel="stylesheet" href="css/buzzer.css">
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1>Qui es-tu ?</h1>
+        
+        <select id="emoji-select" style="font-size: 2rem; padding: 10px; border-radius: 10px; border:none; margin-bottom: 10px;">
+            <option value="😎">😎</option>
+            <option value="🦄">🦄</option>
+            <option value="💩">💩</option>
+            <option value="👽">👽</option>
+            <option value="🤖">🤖</option>
+            <option value="🦊">🦊</option>
+            <option value="🔥">🔥</option>
+            <option value="👑">👑</option>
+        </select>
+        <br>
+        
+        <input type="text" id="pseudo-input" placeholder="Ton pseudo..." maxlength="10">
+        <br>
+        <button class="btn-login" id="btn-valider">REJOINDRE</button>
+    </div>
+
+    <div id="game-screen">
+        <h2 id="status-msg">En attente...</h2>
+        <button id="buzzer-btn">BUZZ !</button>
+        <p style="margin-top:20px; color:#aaa;">Joueur : <span id="display-name"></span></p>
+    </div>
+
+    <script type="module" src="js/buzzer.js"></script>
+</body>
+</html>
