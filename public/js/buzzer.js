@@ -1,10 +1,10 @@
-import { db, ref, set, onValue, runTransaction, update } from './firebase-config.js';
+import { db, ref, update, onValue, runTransaction } from './firebase-config.js';
 
-// Éléments du DOM
+// --- CONFIGURATION ---
 const loginScreen = document.getElementById('login-screen');
 const gameScreen = document.getElementById('game-screen');
 const pseudoInput = document.getElementById('pseudo-input');
-const emojiSelect = document.getElementById('emoji-select'); // Nouveau !
+const emojiSelect = document.getElementById('emoji-select');
 const btnValider = document.getElementById('btn-valider');
 const buzzerBtn = document.getElementById('buzzer-btn');
 const statusMsg = document.getElementById('status-msg');
@@ -12,103 +12,84 @@ const displayName = document.getElementById('display-name');
 
 let monPseudo = "";
 
-// 1. Gestion du Login
+// Petit son de succès pour le téléphone
+const dingSound = new Audio("https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"); // Son libre de droit léger
+
+// 1. LOGIN
 btnValider.addEventListener('click', () => {
     const pseudo = pseudoInput.value.trim().toUpperCase();
-    const avatar = emojiSelect.value; // On récupère l'emoji
-
+    const avatar = emojiSelect.value;
     if (!pseudo) return alert("Mets un pseudo !");
-
+    
     monPseudo = pseudo;
-    displayName.innerText = `${avatar} ${monPseudo}`; // On affiche l'emoji en bas
-
-    // On enregistre le joueur dans la DB
-    const updates = {};
-    updates['/joueurs/' + monPseudo] = {
-        score: 0,
-        avatar: avatar
-    };
-    update(ref(db), updates);
-
+    displayName.innerText = `${avatar} ${monPseudo}`;
+    
+    update(ref(db, 'joueurs/' + monPseudo), { score: 0, avatar: avatar });
     loginScreen.style.display = 'none';
     gameScreen.style.display = 'flex';
 });
 
-// Fonction pour remettre le buzzer à zéro (ROUGE et CLIQUABLE)
 function resetBuzzerState() {
-    buzzerBtn.className = ""; // Enlève 'winner', 'disabled'
+    buzzerBtn.className = ""; 
     buzzerBtn.disabled = false;
     buzzerBtn.innerText = "BUZZ !";
-    
-    // CORRECTION ICI : On supprime le style forcé pour laisser le CSS gérer
     buzzerBtn.style.removeProperty('background-color'); 
     buzzerBtn.style.removeProperty('color');
-    
-    statusMsg.innerText = "À TOI DE JOUER !";
+    statusMsg.innerText = "PRÊT ?";
     statusMsg.style.color = "white";
 }
 
-// 2. Écouter l'état du jeu
-const jeuRef = ref(db, 'etat_jeu');
-
-onValue(jeuRef, (snapshot) => {
+// 2. ÉCOUTE ETAT JEU
+onValue(ref(db, 'etat_jeu'), (snapshot) => {
     const data = snapshot.val();
     
-    // Si pas de données ou si on est en ATTENTE, on reset tout
     if (!data || data.phase === 'ATTENTE') {
         resetBuzzerState();
     } 
     else if (data.phase === 'BUZZ') {
-        // Le jeu est bloqué
         buzzerBtn.disabled = true; 
         
         if (data.buzz_par === monPseudo) {
-            // C'est GAGNÉ pour moi
-            statusMsg.innerText = "TU AS LA MAIN !";
-            statusMsg.style.color = "#2ecc71"; // Vert
+            // C'EST MOI ! (Return 2 : Indicateur Sonore)
+            statusMsg.innerText = "C'EST TOI ! PARLE !";
+            statusMsg.style.color = "#2ecc71";
             buzzerBtn.classList.add('winner');
-            buzzerBtn.innerText = "PARLE !"; // En attendant le timer
+            buzzerBtn.innerText = "🎤";
+            
+            // Vibration + Son
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            dingSound.play().catch(e => console.log("Son bloqué par navigateur mobile"));
+            
         } else {
-            // C'est PERDU pour moi
-            statusMsg.innerText = data.buzz_par + " a buzzé !";
+            statusMsg.innerText = data.buzz_par + " parle...";
             statusMsg.style.color = "orange";
             buzzerBtn.classList.add('disabled');
-            buzzerBtn.innerText = "TROP TARD";
+            buzzerBtn.innerText = "🔒";
         }
     }
     else if (data.phase === 'TIMES_UP') {
-        // Le temps est écoulé, on fige tout le monde
         buzzerBtn.disabled = true;
-        
-        // On rend le bouton gris/neutre pour tout le monde
-        buzzerBtn.className = "disabled"; // Assure-toi d'avoir le style .disabled dans le CSS
-        buzzerBtn.style.removeProperty('background-color'); // On vire le rouge/vert
-        
-        buzzerBtn.innerText = "⏳"; // Petit sablier
-        statusMsg.innerText = "Validation en cours...";
-        statusMsg.style.color = "orange";
+        buzzerBtn.className = "disabled";
+        buzzerBtn.innerText = "⏳";
+        statusMsg.innerText = "Trop tard / Terminé";
+    }
+    else if (data.phase === 'PODIUM') {
+        loginScreen.style.display = 'none';
+        gameScreen.style.display = 'none';
+        document.body.innerHTML = "<h1 style='color:gold; text-align:center; margin-top:50%;'>REGARDE LA TV ! 🏆</h1>";
     }
 });
 
-// 3. L'action de BUZZER
+// 3. ACTION BUZZER
 buzzerBtn.addEventListener('click', () => {
-    // Petit effet vibratoire sur mobile
-    if (navigator.vibrate) navigator.vibrate(200);
-
-    const buzzRef = ref(db, 'etat_jeu');
-
-    // Dans la transaction du bouton buzzer
-runTransaction(buzzRef, (etatActuel) => {
-    // On autorise le buzz si on est en phase QUESTION (et plus ATTENTE)
-    if (!etatActuel || etatActuel.phase !== 'QUESTION') {
-        return; 
-    }
-
-    if (etatActuel.phase === 'QUESTION') {
-        etatActuel.phase = 'BUZZ';
-        etatActuel.buzz_par = monPseudo;
-        etatActuel.timestamp_buzz = Date.now(); // IMPORTANT pour le bonus < 3s
-        return etatActuel;
-    }
+    if (navigator.vibrate) navigator.vibrate(50);
+    
+    runTransaction(ref(db, 'etat_jeu'), (etat) => {
+        if (etat && etat.phase === 'QUESTION') {
+            etat.phase = 'BUZZ';
+            etat.buzz_par = monPseudo;
+            etat.timestamp_buzz = Date.now();
+            return etat;
+        }
     });
 });

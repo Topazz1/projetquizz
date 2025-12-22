@@ -1,147 +1,177 @@
 import { questions } from './questions.js';
 import { db, ref, set, update, runTransaction, onValue, remove } from './firebase-config.js';
 
-// --- ÉLÉMENTS DOM ---
+// DOM Elements
+const dashboard = document.getElementById('main-dashboard');
+const restartScreen = document.getElementById('restart-screen');
 const zoneValidation = document.getElementById('zone-validation');
 const jugeJoueur = document.getElementById('juge-joueur');
+
 const btnVrai = document.getElementById('btn-vrai');
 const btnFaux = document.getElementById('btn-faux');
+const btnReveal = document.getElementById('btn-reveal'); 
 
-// Nouveaux éléments simplifiés
 const btnNext = document.getElementById('btn-next-question');
+// SUPPRIMÉ : const btnSkip ...
+const btnStop = document.getElementById('btn-stop-game'); 
+const btnHardReset = document.getElementById('btn-hard-reset'); 
+
 const checkboxAleatoire = document.getElementById('mode-aleatoire');
+const checkboxAuto = document.getElementById('mode-auto'); 
 const compteurEl = document.getElementById('compteur-q');
 const previewEl = document.getElementById('preview-q');
 
-// Boutons maintenance
-const btnReset = document.getElementById('btn-reset');
-const btnKickAll = document.getElementById('btn-kick-all');
-
-// --- VARIABLES D'ÉTAT ---
-let questionsDispo = []; // Notre "paquet de cartes"
+// Variables
+let questionsDispo = [];
 let currentQuestionData = null;
 let joueurQuiABuzze = "";
+let isAutoRunning = false; 
+let autoLaunchTimeout = null;
 
-// --- 1. INITIALISATION DU "PAQUET" ---
+// INIT
 function initQuestions() {
-    // On fait une copie propre du fichier questions.js
     questionsDispo = [...questions];
     updateCompteur();
 }
-
 function updateCompteur() {
-    if(compteurEl) {
-        compteurEl.innerText = `Questions restantes : ${questionsDispo.length} / ${questions.length}`;
-    }
-    
-    if (questionsDispo.length === 0) {
-        btnNext.innerText = "🏁 FIN DE LA PARTIE (Relancer ?)";
-        btnNext.classList.remove('btn-vert');
-        btnNext.classList.add('btn-gris');
-    }
+    if(compteurEl) compteurEl.innerText = `Questions : ${questionsDispo.length} / ${questions.length}`;
 }
 
-// --- 2. LE GROS BOUTON "QUESTION SUIVANTE" ---
-btnNext.addEventListener('click', () => {
-    // Sécurité : Si plus de questions
+// --- BOUTON LANCER ---
+btnNext.addEventListener('click', () => { lancerProchaineQuestion(); });
+
+function lancerProchaineQuestion() {
+    if(autoLaunchTimeout) clearTimeout(autoLaunchTimeout);
+
     if (questionsDispo.length === 0) {
-        if(confirm("Toutes les questions sont passées ! Veux-tu recharger le paquet ?")) {
-            initQuestions();
-            btnNext.innerText = "🚀 LANCER LA PROCHAINE QUESTION";
-            btnNext.classList.add('btn-vert');
-            btnNext.classList.remove('btn-gris');
-        }
+        if(confirm("Plus de questions ! Finir ?")) finirPartie();
         return;
     }
 
-    let indexChoisi = 0;
-
-    // A. Mode Aléatoire
-    if (checkboxAleatoire.checked) {
-        // On tire un nombre au hasard entre 0 et le nombre de questions restantes
-        indexChoisi = Math.floor(Math.random() * questionsDispo.length);
-    } 
-    // B. Mode Ordre (Normal)
-    else {
-        indexChoisi = 0; // On prend toujours la première du paquet
-    }
-
-    // --- LA MAGIE : On récupère la question et ON L'ENLÈVE du paquet ---
-    const q = questionsDispo[indexChoisi];
-    questionsDispo.splice(indexChoisi, 1); // Hop, poubelle ! Elle ne reviendra plus.
+    btnNext.style.display = 'none';
+    // SUPPRIMÉ : btnSkip.style.display = 'block';
     
-    updateCompteur(); // On met à jour le texte "49/50"
+    let index = 0;
+    if (checkboxAleatoire.checked) index = Math.floor(Math.random() * questionsDispo.length);
+    
+    const q = questionsDispo[index];
+    questionsDispo.splice(index, 1);
+    updateCompteur();
+    
+    previewEl.innerText = `En cours : ${q.searchQuery || q.question}`;
 
-    // Affichage pour l'admin (juste pour info)
-    let titre = q.searchQuery || q.question;
-    previewEl.innerText = `En cours : ${titre} (${q.type})`;
-
-    // --- ENVOI À FIREBASE (Lancement réel) ---
     update(ref(db, 'etat_jeu'), {
         phase: 'QUESTION',
         question_data: q,
         timestamp_start: Date.now(),
         buzz_par: ''
     });
-});
-
-
-// --- 3. ÉCOUTE ET VALIDATION (Reste identique à avant) ---
-onValue(ref(db, 'etat_jeu'), (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        if (data.question_data) currentQuestionData = data.question_data;
-
-        // Affichage Overlay Juge seulement si buzz
-        if ((data.phase === 'BUZZ' || data.phase === 'TIMES_UP') && data.buzz_par) {
-            joueurQuiABuzze = data.buzz_par;
-            if(jugeJoueur) jugeJoueur.innerText = joueurQuiABuzze;
-            if(zoneValidation) zoneValidation.style.display = 'flex'; 
-        } else {
-            if(zoneValidation) zoneValidation.style.display = 'none';
-            joueurQuiABuzze = "";
-        }
-    }
-});
-
-// Validation VRAI
-btnVrai.addEventListener('click', () => {
-    if (!joueurQuiABuzze) return;
-    const points = currentQuestionData ? (currentQuestionData.points || 1) : 1;
-    
-    runTransaction(ref(db, 'joueurs/' + joueurQuiABuzze + '/score'), (score) => (score || 0) + points);
-    resetJeu();
-});
-
-// Validation FAUX
-btnFaux.addEventListener('click', () => {
-    if (!joueurQuiABuzze) return;
-    if (currentQuestionData && currentQuestionData.malus) {
-        runTransaction(ref(db, 'joueurs/' + joueurQuiABuzze + '/score'), (score) => (score || 0) + currentQuestionData.malus);
-    }
-    resetJeu();
-});
-
-// Fonctions Reset / Kick
-btnReset.addEventListener('click', () => {
-    resetJeu();
-    if(zoneValidation) zoneValidation.style.display = 'none';
-});
-
-btnKickAll.addEventListener('click', () => {
-    if(confirm("Virer tout le monde ?")) {
-        remove(ref(db, 'joueurs'));
-        resetJeu();
-    }
-});
-
-function resetJeu() {
-    set(ref(db, 'etat_jeu'), {
-        phase: 'ATTENTE',
-        buzz_par: '',
-        question_data: null
-    });
 }
 
-// Lancement au chargement de la page
+// SUPPRIMÉ : btnSkip listener ...
+
+// --- BOUTON RÉPONSE ---
+btnReveal.addEventListener('click', () => {
+    console.log("👀 Demande d'affichage de la réponse...");
+    update(ref(db, 'etat_jeu'), { phase: 'TIMES_UP' });
+});
+
+// --- FINIR PARTIE & PODIUM ---
+btnStop.addEventListener('click', () => {
+    if(confirm("Lancer le podium final ?")) finirPartie();
+});
+
+function finirPartie() {
+    isAutoRunning = false;
+    if(autoLaunchTimeout) clearTimeout(autoLaunchTimeout);
+    
+    btnNext.style.display = 'block';
+    // SUPPRIMÉ : btnSkip.style.display = 'none';
+    
+    update(ref(db, 'etat_jeu'), { phase: 'PODIUM' });
+}
+
+// --- HARD RESET ---
+btnHardReset.addEventListener('click', () => {
+    if(confirm("ATTENTION : Cela va effacer les joueurs et recharger le jeu. Sûr ?")) {
+        set(ref(db, 'etat_jeu'), { phase: 'ATTENTE', buzz_par: '', question_data: null });
+        remove(ref(db, 'joueurs')).then(() => {
+            window.location.reload();
+        });
+    }
+});
+
+
+// --- ÉCOUTE DE L'ÉTAT DU JEU ---
+onValue(ref(db, 'etat_jeu'), (snapshot) => {
+    const data = snapshot.val();
+    if (!data) return;
+
+    if (data.question_data) currentQuestionData = data.question_data;
+
+    // 1. Cas PODIUM
+    if (data.phase === 'PODIUM') {
+        dashboard.style.display = 'none';
+        zoneValidation.style.display = 'none';
+        restartScreen.style.display = 'flex'; 
+        return; 
+    } else {
+        dashboard.style.display = 'flex';
+        restartScreen.style.display = 'none';
+    }
+
+    // 2. Cas VALIDATION
+    if ((data.phase === 'BUZZ' || data.phase === 'TIMES_UP') && data.buzz_par) {
+        joueurQuiABuzze = data.buzz_par;
+        if(jugeJoueur) jugeJoueur.innerText = joueurQuiABuzze;
+        if(zoneValidation) zoneValidation.style.display = 'flex'; 
+    } else {
+        if(zoneValidation) zoneValidation.style.display = 'none';
+    }
+
+    // 3. Mode AUTO
+    if (data.phase === 'ATTENTE' && checkboxAuto.checked && isAutoRunning) {
+        if(autoLaunchTimeout) clearTimeout(autoLaunchTimeout);
+        console.log("⏳ Mode Auto...");
+        autoLaunchTimeout = setTimeout(() => {
+            if(checkboxAuto.checked && isAutoRunning) lancerProchaineQuestion();
+        }, 3000);
+    }
+});
+
+// --- VALIDATION POINTS ---
+const handleValidation = (points) => {
+    if (!joueurQuiABuzze) return;
+    runTransaction(ref(db, 'joueurs/' + joueurQuiABuzze + '/score'), (score) => (score || 0) + points)
+    .then(() => {
+        isAutoRunning = true; 
+        set(ref(db, 'etat_jeu'), { phase: 'ATTENTE', buzz_par: '', question_data: null });
+    });
+};
+
+btnVrai.addEventListener('click', () => {
+    const pts = currentQuestionData ? (currentQuestionData.points || 1) : 1;
+    handleValidation(pts);
+});
+
+btnFaux.addEventListener('click', () => {
+    let pts = 0;
+    if (currentQuestionData && currentQuestionData.malus) pts = currentQuestionData.malus;
+    handleValidation(pts);
+});
+
+// Reset manuel
+document.getElementById('btn-reset').addEventListener('click', () => {
+    isAutoRunning = false;
+    if(autoLaunchTimeout) clearTimeout(autoLaunchTimeout);
+    btnNext.style.display = 'block';
+    // SUPPRIMÉ : btnSkip.style.display = 'none';
+    set(ref(db, 'etat_jeu'), { phase: 'ATTENTE', buzz_par: '', question_data: null });
+});
+
+document.getElementById('btn-kick-all').addEventListener('click', () => {
+    if(confirm("Virer tout le monde ?")) remove(ref(db, 'joueurs'));
+});
+
+// Démarrage
 initQuestions();
