@@ -16,17 +16,27 @@
         </div>
 
         <div class="control-panel">
-            <div class="switch-container">
-                <label class="switch-label"><input type="checkbox" id="mode-aleatoire" checked> 🎲 Aléatoire</label>
-                <label class="switch-label"><input type="checkbox" id="mode-auto"> 🔄 Auto</label>
+            <div class="settings-box">
+                <div class="switches-row">
+                    <label class="switch-label"><input type="checkbox" id="mode-aleatoire" checked> 🎲 Aléatoire</label>
+                    <label class="switch-label"><input type="checkbox" id="mode-auto"> 🔄 Auto</label>
+                </div>
+                
+                <div class="divider"></div>
+
+                <label class="switch-label team-switch">
+                    <input type="checkbox" id="mode-equipe"> 
+                    <span>🛡️ MODE ÉQUIPES (🔴🔵🟢🟡)</span>
+                </label>
             </div>
 
             <button id="btn-next-question" class="big-btn start-btn">🚀 LANCER LA PARTIE</button>
+            <button id="btn-skip" class="action-btn skip-btn" style="display:none;">⏩ PASSER (PERSONNE)</button>
         </div>
 
         <div class="footer-controls">
             <button id="btn-stop-game" class="mini-btn rouge">🛑 PODIUM</button>
-            <button id="btn-reset" class="mini-btn gris">🔄 Reset Rapide</button>
+            <button id="btn-reset" class="mini-btn gris">🔄 Reset</button>
             <button id="btn-kick-all" class="mini-btn gris">💀 Kick All</button>
         </div>
     </div>
@@ -38,8 +48,7 @@
             
             <div class="actions-juge">
                 <button id="btn-vrai" class="gros-bouton btn-vert">
-                    <span class="emoji">✅</span>
-                    <small>VRAI</small>
+                    <span class="emoji">✅</span><small>VRAI</small>
                 </button>
                 
                 <button id="btn-reveal" class="petit-bouton-gris">
@@ -47,8 +56,7 @@
                 </button>
 
                 <button id="btn-faux" class="gros-bouton btn-rouge">
-                    <span class="emoji">❌</span>
-                    <small>FAUX</small>
+                    <span class="emoji">❌</span><small>FAUX</small>
                 </button>
             </div>
         </div>
@@ -57,10 +65,7 @@
     <div id="restart-screen">
         <h1 style="color:#f1c40f; font-size: 3rem; margin-bottom: 20px;">PARTIE TERMINÉE</h1>
         <p class="restart-text">Le podium est affiché sur la TV.<br>Prêt pour une nouvelle partie ?</p>
-        
-        <button id="btn-hard-reset">
-            🔄 TOUT EFFACER <br> & RECOMMENCER
-        </button>
+        <button id="btn-hard-reset">🔄 TOUT EFFACER & RECOMMENCER</button>
     </div>
 
     <script type="module" src="js/admin.js"></script>
