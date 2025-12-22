@@ -112,7 +112,10 @@ function afficherLaQuestion(q) {
     const cat = q.categorie || "QUESTION";
     const typeLabel = (q.type === 'vrai_faux') ? "VRAI / FAUX" : (q.type === 'audio' ? "BLIND TEST" : "QUIZ");
     questionHeader.style.display = 'flex';
-    questionHeader.innerHTML = `<span>${cat}</span> <span>${typeLabel} • ${pts} PTS</span>`;
+    questionHeader.innerHTML = `
+        <span class="header-cat">${cat}</span>
+        <span class="header-sub">${typeLabel} • ${pts} PTS</span>
+    `;
 
     // Contenu
     let texte = q.question;

@@ -34,19 +34,49 @@ body {
 }
 
 /* Header Question (Type + Points) */
+/* --- HEADER QUESTION (MODIFIÉ) --- */
 #question-header {
     position: absolute;
-    top: 0;
+    top: 40px; /* On le descend un peu du bord haut */
     left: 0;
     width: 100%;
+    
+    /* Centrage total */
     display: flex;
-    justify-content: space-between;
-    padding: 0 40px;
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #bdc3c7;
+    flex-direction: column; /* On empile les infos (Thème au dessus, Points en dessous) */
+    align-items: center;
+    justify-content: center;
+    
+    z-index: 10;
+}
+
+/* Le Nom de la Catégorie (ex: ELECTRO, FILM...) */
+.header-cat {
+    font-size: 5rem; /* ÉNORME */
+    font-weight: 900;
+    color: #f1c40f; /* Jaune Or */
+    text-transform: uppercase;
+    letter-spacing: 5px;
+    text-shadow: 0 4px 10px rgba(0,0,0,0.8); /* Ombre portée pour lisibilité */
+    margin-bottom: 10px;
+    animation: fadeInDown 0.5s ease-out;
+}
+
+/* Les infos secondaires (Blind Test • 2 Pts) */
+.header-sub {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: white;
+    background: rgba(0,0,0,0.4); /* Petit fond noir pour détacher */
+    padding: 5px 20px;
+    border-radius: 50px;
     text-transform: uppercase;
     letter-spacing: 2px;
+}
+
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Le Texte d'attente / Timer */
