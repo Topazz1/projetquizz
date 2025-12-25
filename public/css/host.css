@@ -219,3 +219,12 @@ body {
     border-radius: 15px;
     width: 100%;
 }
+
+/* Animation Compte à rebours */
+.countdown-text {
+    animation: zoomIn 0.5s;
+}
+@keyframes zoomIn {
+    0% { transform: scale(0.5); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}

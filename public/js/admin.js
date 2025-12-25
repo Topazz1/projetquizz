@@ -64,7 +64,7 @@ function lancerProchaineQuestion() {
     }
 
     btnNext.style.display = 'none';
-    btnSkip.style.display = 'block'; 
+    btnSkip.style.display = 'block'; // On affiche le bouton passer (il sera utile après les 3s)
     
     let index = 0;
     if (checkboxAleatoire.checked) index = Math.floor(Math.random() * questionsDispo.length);
@@ -75,28 +75,33 @@ function lancerProchaineQuestion() {
     
     previewEl.innerText = `En cours : ${q.searchQuery || q.question}`;
 
+    // --- MODIFICATION MAJEURE ICI ---
+    // 1. On lance la phase de LECTURE (Bloqué)
     update(ref(db, 'etat_jeu'), {
-        phase: 'QUESTION',
+        phase: 'READING',
         question_data: q,
         timestamp_start: Date.now(),
         buzz_par: ''
     });
+
+    // 2. Après 3 secondes, on débloque (Phase QUESTION)
+    setTimeout(() => {
+        // On vérifie qu'on n'a pas reset entre temps
+        if(btnNext.style.display === 'none') { 
+            update(ref(db, 'etat_jeu'), {
+                phase: 'QUESTION',
+                timestamp_start: Date.now() // On reset le chrono pour qu'il parte de 30s ici
+            });
+        }
+    }, 3000); // 3 secondes de délai
 }
 
-// CORRECTION BOUTON PASSER
+// Boutons Actions
 btnSkip.addEventListener('click', () => {
-    // Force la fin du temps, ce qui affiche la réponse sur la TV
-    update(ref(db, 'etat_jeu'), { phase: 'TIMES_UP' });
-    
-    // Si personne n'a buzzé, on cache le bouton skip et on réaffiche le bouton suivant
-    // Le host s'occupe d'afficher la réponse
+    update(ref(db, 'etat_jeu/phase'), 'TIMES_UP');
     setTimeout(() => {
-        if(isAutoRunning && checkboxAuto.checked) {
-           // Si auto, le host va relancer
-        } else {
-           btnSkip.style.display = 'none';
-           btnNext.style.display = 'block';
-        }
+        if(isAutoRunning && checkboxAuto.checked) { /* Auto géré par le listener */ } 
+        else { btnSkip.style.display = 'none'; btnNext.style.display = 'block'; }
     }, 1000);
 });
 
@@ -128,6 +133,7 @@ onValue(ref(db, 'etat_jeu'), (snapshot) => {
 
     if (data.question_data) currentQuestionData = data.question_data;
     
+    // Synchro Interface
     if (data.mode === 'EQUIPE') {
         isModeEquipe = true;
         if(!checkboxEquipe.checked) checkboxEquipe.checked = true;
@@ -136,7 +142,7 @@ onValue(ref(db, 'etat_jeu'), (snapshot) => {
         if(checkboxEquipe.checked) checkboxEquipe.checked = false;
     }
 
-    // PODIUM
+    // Gestion Écrans
     if (data.phase === 'PODIUM') {
         dashboard.style.display = 'none';
         zoneValidation.style.display = 'none';
@@ -147,13 +153,12 @@ onValue(ref(db, 'etat_jeu'), (snapshot) => {
         restartScreen.style.display = 'none';
     }
 
-    // GESTION BOUTONS
     if(data.phase === 'ATTENTE') {
         btnNext.style.display = 'block';
         btnSkip.style.display = 'none';
     }
 
-    // VALIDATION
+    // Validation
     if ((data.phase === 'BUZZ' || data.phase === 'TIMES_UP') && data.buzz_par) {
         joueurQuiABuzze = data.buzz_par;
         jugeJoueur.innerText = joueurQuiABuzze;
@@ -163,7 +168,7 @@ onValue(ref(db, 'etat_jeu'), (snapshot) => {
         zoneValidation.style.display = 'none';
     }
 
-    // AUTO
+    // Auto-Cycle
     if (data.phase === 'ATTENTE' && checkboxAuto.checked && isAutoRunning) {
         if(autoLaunchTimeout) clearTimeout(autoLaunchTimeout);
         autoLaunchTimeout = setTimeout(() => {
@@ -172,7 +177,7 @@ onValue(ref(db, 'etat_jeu'), (snapshot) => {
     }
 });
 
-// VALIDATION
+// Validation
 const handleValidation = (points) => {
     if (!joueurQuiABuzze) return;
     let path = ['ROUGE', 'BLEU', 'VERT', 'JAUNE'].includes(joueurQuiABuzze) 

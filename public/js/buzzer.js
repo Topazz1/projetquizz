@@ -17,10 +17,9 @@ let monPseudo = "";
 let monEquipe = ""; 
 let isTeamMode = false;
 
-// Son
 const dingSound = new Audio("https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"); 
 
-// 1. DÉTECTION DU MODE
+// DÉTECTION MODE
 onValue(ref(db, 'etat_jeu/mode'), (snapshot) => {
     const mode = snapshot.val();
     if (!monPseudo && !monEquipe) {
@@ -36,11 +35,11 @@ onValue(ref(db, 'etat_jeu/mode'), (snapshot) => {
     }
 });
 
-// 2. LOGIN SOLO
+// LOGIN
 btnValider.addEventListener('click', () => {
     const pseudo = pseudoInput.value.trim().toUpperCase();
     const avatar = emojiSelect.value;
-    if (!pseudo) return alert("Mets un pseudo !");
+    if (!pseudo) return alert("Pseudo ?");
     monPseudo = pseudo;
     displayName.innerText = `${avatar} ${monPseudo}`;
     update(ref(db, 'joueurs/' + monPseudo), { score: 0, avatar: avatar });
@@ -48,7 +47,6 @@ btnValider.addEventListener('click', () => {
     gameScreen.style.display = 'flex';
 });
 
-// 3. LOGIN ÉQUIPE
 teamBtns.forEach(btn => {
     btn.addEventListener('click', () => {
         const couleur = btn.getAttribute('data-color');
@@ -62,32 +60,41 @@ teamBtns.forEach(btn => {
     });
 });
 
-// FONCTION RESET
+// RESET
 function resetBuzzerState() {
     buzzerBtn.className = ""; 
     buzzerBtn.disabled = false;
     buzzerBtn.innerText = "BUZZ !";
     statusMsg.innerText = "PRÊT ?";
     statusMsg.style.color = "white";
-    
-    // Si pas d'équipe, on enlève la couleur forcée (retour au rouge css)
-    if (!monEquipe) {
-        buzzerBtn.style.removeProperty('background-color');
-    }
+    if (!monEquipe) buzzerBtn.style.removeProperty('background-color');
 }
 
-// 4. ÉCOUTE ETAT JEU (C'est ici que j'ai corrigé)
+// ETAT DU JEU
 onValue(ref(db, 'etat_jeu'), (snapshot) => {
     const data = snapshot.val();
     if (!data) return;
 
-    // SI ATTENTE OU QUESTION : ON DÉBLOQUE !
-    if (data.phase === 'ATTENTE' || data.phase === 'QUESTION') {
+    // Phase ATTENTE
+    if (data.phase === 'ATTENTE') {
         resetBuzzerState();
-    } 
+    }
+    // Phase LECTURE (Nouveau) - BLOQUÉ
+    else if (data.phase === 'READING') {
+        buzzerBtn.disabled = true;
+        buzzerBtn.className = "disabled";
+        buzzerBtn.innerText = "⏳";
+        statusMsg.innerText = "LISEZ...";
+        statusMsg.style.color = "#f1c40f";
+    }
+    // Phase QUESTION - DÉBLOQUÉ
+    else if (data.phase === 'QUESTION') {
+        resetBuzzerState(); // C'est ici qu'on libère la bête !
+        statusMsg.innerText = "À TOI !";
+    }
+    // Phase BUZZ
     else if (data.phase === 'BUZZ') {
         buzzerBtn.disabled = true; 
-        
         if (data.buzz_par === monPseudo || data.buzz_par === monEquipe) {
             statusMsg.innerText = "PARLEZ !";
             statusMsg.style.color = "#2ecc71";
@@ -110,11 +117,10 @@ onValue(ref(db, 'etat_jeu'), (snapshot) => {
     }
 });
 
-// 5. ACTION BUZZER
+// ACTION
 buzzerBtn.addEventListener('click', () => {
     if (navigator.vibrate) navigator.vibrate(50);
     const buzzerName = monEquipe ? monEquipe : monPseudo;
-
     runTransaction(ref(db, 'etat_jeu'), (etat) => {
         if (etat && etat.phase === 'QUESTION') {
             etat.phase = 'BUZZ';
