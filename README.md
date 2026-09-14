@@ -48,7 +48,7 @@
 
 * **Deterministic State Flow:** Orchestrated around well-defined game lifecycle phases:
 
-$$\text{ATTENTE} \longrightarrow \text{QUESTION} \longrightarrow \text{BUZZ} \longrightarrow \text{TIMES\_UP} \longrightarrow \text{PODIUM}$$
+$$\text{ATTENTE} \longrightarrow \text{QUESTION} \longrightarrow \text{BUZZ} \longrightarrow \text{TIMES-UP} \longrightarrow \text{PODIUM}$$
 
 
 * **Atomic Score Attribution:** Utilizes Firebase `runTransaction` on player scores to prevent conflicting writes during rapid point updates.
